@@ -1,0 +1,40 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import cron from 'node-cron';
+import { getDb } from './db/index.js';
+import { pingTorque } from './services/torque.js';
+import { runSwapPoll } from './crons/swapPoller.js';
+import { runCycleReset } from './crons/cycleReset.js';
+import walletRoutes from './routes/wallet.js';
+import leaderboardRoutes from './routes/leaderboard.js';
+dotenv.config();
+const app = express();
+const PORT = process.env.PORT || 3001;
+app.use(cors({ origin: '*' }));
+app.use(express.json());
+app.get('/health', (req, res) => res.json({ status: 'ok', app: 'StreakBoard', time: new Date().toISOString() }));
+app.use('/api/wallet', walletRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
+async function start() {
+  console.log('');
+  console.log('┌─────────────────────────────────┐');
+  console.log('│  StreakBoard Server              │');
+  console.log('│  Swap daily. Climb. Win weekly.  │');
+  console.log('└─────────────────────────────────┘');
+  console.log('');
+  getDb();
+  console.log('[db] SQLite initialized ✓');
+  await pingTorque();
+  const pollSchedule = process.env.SWAP_POLL_CRON || '*/5 * * * *';
+  cron.schedule(pollSchedule, () => runSwapPoll());
+  console.log(`[cron] Swap poller: ${pollSchedule}`);
+  const cycleSchedule = process.env.CYCLE_RESET_CRON || '0 0 * * 1';
+  cron.schedule(cycleSchedule, () => runCycleReset());
+  console.log(`[cron] Cycle reset: ${cycleSchedule}`);
+  app.listen(PORT, () => {
+    console.log(`\n[server] Running at http://localhost:${PORT}`);
+    console.log(`[server] Health: http://localhost:${PORT}/health\n`);
+  });
+}
+start().catch(err => { console.error('[server] Failed to start:', err); process.exit(1); });
