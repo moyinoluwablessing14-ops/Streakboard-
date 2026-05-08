@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { api } from '../lib/api.js';
+import HowItWorks from '../components/HowItWorks.jsx';
+import RaffleCountdown from '../components/RaffleCountdown.jsx';
 
 export default function Home() {
   const { publicKey, connected } = useWallet();
@@ -41,15 +43,16 @@ export default function Home() {
         <div style={{ display:'flex', alignItems:'center', gap:'8px', flexShrink:0 }}>
           <span style={{ fontSize:'20px' }}>🔥</span>
           <span style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:'18px', letterSpacing:'-0.03em' }}>StreakBoard</span>
+          <span style={{ background:'#1a1a17', border:'1px solid #2e2e28', borderRadius:'20px', padding:'2px 8px', fontSize:'9px', color:'#f5a623', letterSpacing:'0.1em' }}>BETA</span>
         </div>
-        <WalletMultiButton style={{ fontSize:'12px', height:'36px' }} />
+        <WalletMultiButton />
       </nav>
 
       <div style={{ maxWidth:'640px', margin:'0 auto', padding:'0 20px 80px' }}>
 
-        {/* Hero */}
+        {/* Hero - only when not connected */}
         {!connected && (
-          <div style={{ textAlign:'center', padding:'48px 0 40px' }}>
+          <div style={{ textAlign:'center', padding:'48px 0 32px' }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:'6px', background:'#1a1a17', border:'1px solid #2e2e28', borderRadius:'20px', padding:'5px 14px', fontSize:'10px', color:'#f5a623', letterSpacing:'0.08em', marginBottom:'24px' }}>
               <span style={{ fontSize:'8px' }}>●</span> POWERED BY TORQUE PROTOCOL
             </div>
@@ -59,12 +62,12 @@ export default function Home() {
               Win weekly.
             </h1>
             <p style={{ color:'#6b6760', fontSize:'14px', marginBottom:'28px', lineHeight:1.7 }}>
-              Track your Jupiter swap streak. Hit 5 days to enter the weekly raffle. Top 3 earns a rebate.
+              Track your Jupiter swap streak. Hit 5 days to enter the weekly raffle. Top 3 earns a rebate. First to hit milestones gets a gift.
             </p>
             <WalletMultiButton />
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px', marginTop:'40px', paddingTop:'32px', borderTop:'1px solid #1a1a17' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'10px', marginTop:'36px', paddingTop:'28px', borderTop:'1px solid #1a1a17' }}>
               {[['🏆','Leaderboard'],['🎟','Raffle'],['💸','Rebate'],['🎁','Gift']].map(([e,t]) => (
-                <div key={t} style={{ background:'#111110', border:'1px solid #1e1e1a', borderRadius:'10px', padding:'14px 8px', textAlign:'center' }}>
+                <div key={t} style={{ background:'#111110', border:'1px solid #1e1e1a', borderRadius:'10px', padding:'12px 8px', textAlign:'center' }}>
                   <div style={{ fontSize:'20px', marginBottom:'6px' }}>{e}</div>
                   <div style={{ fontSize:'10px', color:'#f5a623', letterSpacing:'0.08em', fontWeight:600 }}>{t}</div>
                 </div>
@@ -75,7 +78,7 @@ export default function Home() {
 
         {/* Stats */}
         {stats && (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px', marginBottom:'20px', marginTop: connected ? '24px' : '0' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px', marginBottom:'16px', marginTop: connected ? '24px' : '0' }}>
             {[['👛','Wallets',stats.totalWallets],['⚡','Active Today',stats.activeToday],['🔄','Swaps',stats.totalSwaps],['🏆','Milestones',stats.globalMilestonesUnlocked]].map(([e,l,v]) => (
               <div key={l} style={{ background:'#111110', border:'1px solid #1e1e1a', borderRadius:'12px', padding:'16px' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
@@ -88,9 +91,12 @@ export default function Home() {
           </div>
         )}
 
+        {/* Raffle Countdown - always visible */}
+        <RaffleCountdown />
+
         {/* Streak Card */}
         {connected && (
-          <div style={{ background: streak?.isAlive ? 'linear-gradient(135deg,#111110,rgba(245,166,35,0.06))' : '#111110', border:`1px solid ${streak?.isAlive ? '#c4841a' : '#1e1e1a'}`, borderRadius:'16px', padding:'24px', marginBottom:'16px', boxShadow: streak?.isAlive ? '0 0 40px rgba(245,166,35,0.08)' : 'none' }}>
+          <div style={{ background: streak?.isAlive ? 'linear-gradient(135deg,#111110,rgba(245,166,35,0.06))' : '#111110', border:`1px solid ${streak?.isAlive ? '#c4841a' : '#1e1e1a'}`, borderRadius:'16px', padding:'24px', marginTop:'16px', boxShadow: streak?.isAlive ? '0 0 40px rgba(245,166,35,0.08)' : 'none' }}>
             {!registered ? (
               <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
                 <div style={{ fontSize:'28px' }}>👋</div>
@@ -145,7 +151,6 @@ export default function Home() {
             </div>
             {stats && <div style={{ background:'#0a0a08', border:'1px solid #1e1e1a', borderRadius:'6px', padding:'6px 10px', fontSize:'11px', color:'#6b6760' }}>{stats.activeToday} active</div>}
           </div>
-
           {leaderboard.length === 0 ? (
             <div style={{ padding:'40px 0', textAlign:'center' }}>
               <div style={{ fontSize:'32px', marginBottom:'10px' }}>🔥</div>
@@ -171,9 +176,8 @@ export default function Home() {
               </div>
             );
           })}
-
           <div style={{ display:'flex', flexWrap:'wrap', gap:'12px', marginTop:'16px', paddingTop:'16px', borderTop:'1px solid #1a1a17' }}>
-            {[['#f5a623','Top 3 earn rebate'],['#4ade80','Streak ≥ 5 enters raffle'],['inherit','🏆 First milestone = gift']].map(([c,t]) => (
+            {[['#f5a623','Top 3 earn rebate'],['#4ade80','Streak ≥ 5 enters raffle']].map(([c,t]) => (
               <div key={t} style={{ display:'flex', alignItems:'center', gap:'5px' }}>
                 <span style={{ fontSize:'8px', color:c }}>◆</span>
                 <span style={{ fontSize:'10px', color:'#3d3a35' }}>{t}</span>
@@ -181,6 +185,10 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {/* How it works */}
+        <HowItWorks />
+
       </div>
     </div>
   );
