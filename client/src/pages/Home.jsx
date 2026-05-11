@@ -12,6 +12,7 @@ export default function Home() {
   const [stats, setStats] = useState(null);
   const [registered, setRegistered] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(false);
   const address = publicKey?.toString();
 
   useEffect(() => {
@@ -26,19 +27,29 @@ export default function Home() {
 
   useEffect(() => {
     if (!address) { setStreak(null); setRegistered(false); return; }
-    api.getStreak(address).then(d => { setStreak(d); setRegistered(true); }).catch(() => setRegistered(false));
+    setChecking(true);
+    api.getStreak(address)
+      .then(d => { setStreak(d); setRegistered(true); })
+      .catch(() => { setRegistered(false); setStreak(null); })
+      .finally(() => setChecking(false));
   }, [address]);
 
   async function register() {
+    if (!address) return;
     setLoading(true);
-    try { const d = await api.registerWallet(address); setStreak(d.streak); setRegistered(true); } catch {}
+    try {
+      const d = await api.registerWallet(address);
+      setStreak(d.streak);
+      setRegistered(true);
+    } catch(e) {
+      console.error('Register error:', e);
+    }
     setLoading(false);
   }
 
   return (
     <div style={{ minHeight:'100vh', background:'#0a0a08', color:'#f5f0e8', fontFamily:"'DM Mono',monospace", overflowX:'hidden' }}>
 
-      {/* Nav */}
       <nav style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px', borderBottom:'1px solid #1e1e1a', background:'rgba(10,10,8,0.95)', position:'sticky', top:0, zIndex:100 }}>
         <div style={{ display:'flex', alignItems:'center', gap:'8px', flexShrink:0 }}>
           <span style={{ fontSize:'20px' }}>🔥</span>
@@ -50,7 +61,6 @@ export default function Home() {
 
       <div style={{ maxWidth:'640px', margin:'0 auto', padding:'0 20px 80px' }}>
 
-        {/* Hero - only when not connected */}
         {!connected && (
           <div style={{ textAlign:'center', padding:'48px 0 32px' }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:'6px', background:'#1a1a17', border:'1px solid #2e2e28', borderRadius:'20px', padding:'5px 14px', fontSize:'10px', color:'#f5a623', letterSpacing:'0.08em', marginBottom:'24px' }}>
@@ -76,7 +86,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Stats */}
         {stats && (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px', marginBottom:'16px', marginTop: connected ? '24px' : '0' }}>
             {[['👛','Wallets',stats.totalWallets],['⚡','Active Today',stats.activeToday],['🔄','Swaps',stats.totalSwaps],['🏆','Milestones',stats.globalMilestonesUnlocked]].map(([e,l,v]) => (
@@ -91,19 +100,25 @@ export default function Home() {
           </div>
         )}
 
-        {/* Raffle Countdown - always visible */}
         <RaffleCountdown />
 
-        {/* Streak Card */}
         {connected && (
           <div style={{ background: streak?.isAlive ? 'linear-gradient(135deg,#111110,rgba(245,166,35,0.06))' : '#111110', border:`1px solid ${streak?.isAlive ? '#c4841a' : '#1e1e1a'}`, borderRadius:'16px', padding:'24px', marginTop:'16px', boxShadow: streak?.isAlive ? '0 0 40px rgba(245,166,35,0.08)' : 'none' }}>
-            {!registered ? (
+            {checking ? (
+              <div style={{ textAlign:'center', padding:'20px', color:'#6b6760', fontSize:'13px' }}>
+                Checking your streak...
+              </div>
+            ) : !registered ? (
               <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
                 <div style={{ fontSize:'28px' }}>👋</div>
                 <h3 style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:'20px' }}>First time here?</h3>
                 <p style={{ color:'#6b6760', fontSize:'13px', lineHeight:1.6 }}>Register your wallet to start tracking your daily Jupiter swap streak.</p>
-                <button onClick={register} disabled={loading} style={{ alignSelf:'flex-start', background:'#f5a623', color:'#000', border:'none', borderRadius:'8px', padding:'12px 20px', fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:'14px', cursor:'pointer' }}>
-                  {loading ? 'Registering...' : 'Start Tracking →'}
+                <button
+                  onClick={register}
+                  disabled={loading}
+                  style={{ alignSelf:'flex-start', background: loading ? '#6b6760' : '#f5a623', color:'#000', border:'none', borderRadius:'8px', padding:'14px 24px', fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:'15px', cursor: loading ? 'not-allowed' : 'pointer', transition:'all 0.2s' }}
+                >
+                  {loading ? 'Registering...' : '🚀 Start Tracking'}
                 </button>
               </div>
             ) : streak ? (
@@ -142,7 +157,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Leaderboard */}
         <div style={{ background:'#111110', border:'1px solid #1e1e1a', borderRadius:'16px', padding:'20px', marginTop:'16px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
             <div>
@@ -186,7 +200,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* How it works */}
         <HowItWorks />
 
       </div>
